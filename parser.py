@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup as bs
 from urllib.parse import urljoin
 import sys, io
+from sqlalchemy import create_engine, text
 
 # sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 URL = "https://books.toscrape.com/"
@@ -14,12 +15,26 @@ HEADERS = {
     "Connection": "keep-alive"
 }
 
+DATABASE_URL = "postgresql://admin:4156@localhost:5432/mydb"
+engine = create_engine(DATABASE_URL)
+
+def test_connection():
+    try:
+        with engine.connect() as connection:
+            # Проверяем соединение
+            result = connection.execute(text("SELECT version();"))
+            for row in result:
+                print("Успешное подключение к PostgreSQL в Docker!")
+                print(f"Версия базы: {row[0]}")
+    except Exception as e:
+        print(f"Ошибка подключения: {e}")
+
 def get_soup(url = ''):
     response = requests.get(url, HEADERS)
     response.encoding = 'utf-8'
     soup = bs(response.text, 'html.parser')
     return soup
-
+test_connection()
 index_soup = get_soup(URL)
 side_cat = index_soup.find("div", class_="side_categories") # Поиск категорий
 side_cat = side_cat.find("ul").find("ul")
