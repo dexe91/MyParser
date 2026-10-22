@@ -34,7 +34,9 @@ def get_soup(url = ''):
     response.encoding = 'utf-8'
     soup = bs(response.text, 'html.parser')
     return soup
+
 test_connection()
+
 index_soup = get_soup(URL)
 side_cat = index_soup.find("div", class_="side_categories") # Поиск категорий
 side_cat = side_cat.find("ul").find("ul")
@@ -43,27 +45,32 @@ if side_cat:
     cats = side_cat.find_all("a")
 
     for cat in cats: # Переход на url категории
-        cat_title = cat.text.strip()
-        cat_href = cat['href']
-        print(f"------------Category: {cat_title}------------")
-        current_url = urljoin(URL, cat_href)
+        if cat:
+            cat_title = cat.get_text(strip=True)
+            cat_href = cat.get("href","").strip()
+            print(f"------------Category: {cat_title}------------")
+            current_url = urljoin(URL, cat_href)
 
-        while current_url:
-            cat_soup = get_soup(current_url)
-            books = cat_soup.find_all("article", class_="product_pod")
+            while current_url:
+                cat_soup = get_soup(current_url)
+                books = cat_soup.find_all("article", class_="product_pod")
 
-            for book in books: # Проход по книгам категории
-                book_title = book.h3.a["title"]
-                price = book.find("p", class_="price_color").text
-                rating = book.p["class"][-1]
-                print(f"Name: {book_title}, \nCategory: {cat_title}, \nCost: {price}, \nRating: {rating}, \n")
+                for book in books: # Проход по книгам категории
+                    if book:
+                        book_title = book.h3.a["title"]
+                        price = book.find("p", class_="price_color").text
+                        rating = book.p["class"][-1]
+                        print(f"Name: {book_title}, \nCategory: {cat_title}, \nCost: {price}, \nRating: {rating}, \n")
+                    else:
+                        print("Ошибка, книга не найдена")
 
-            next_button = cat_soup.find("li", class_="next")
+                next_button = cat_soup.find("li", class_="next")
 
-            if next_button:
-                next_page_href = next_button.a["href"]
-                current_url = urljoin(current_url, next_page_href)
-                print("\nnext page\n")
-            else:
-                current_url = None
-        
+                if next_button:
+                    next_page_href = next_button.a["href"]
+                    current_url = urljoin(current_url, next_page_href)
+                    print("\nnext page\n")
+                else:
+                    current_url = None
+        else:
+            print("Ошибка, категория не найдена")
