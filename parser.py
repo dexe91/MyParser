@@ -57,6 +57,22 @@ if side_cat:
 
                 for book in books: # Проход по книгам категории
                     if book:
+                        book_href = book.get("href,"").strip()
+                        book_url = urljoin(book_href)
+                        book_soup = get_soup(book_url)
+                        book_page = book_soup.find("article", class_="product_page")
+                        if book_page:
+                            book_title = book_soup.find("h1")                           
+                            book_description = book_soup.p.text
+                            book_cost = book_soup.find("p", class_="price_color").text
+                            star_tag = book.select_one('p[class^="star-rating"]')
+                            book_rating = star_tag["class"][-1] if star_tag else "None"
+                            book_amount = book_soup.find("p", class_="instock_availability").text
+                            # Колво отзывов
+                            # UID (UPC)
+                            # Ссылка на товар
+
+
                         book_title = book.h3.a["title"]
                         price = book.find("p", class_="price_color").text
                         rating = book.p["class"][-1]
