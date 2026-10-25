@@ -15,19 +15,19 @@ HEADERS = {
     "Connection": "keep-alive"
 }
 
-DATABASE_URL = "postgresql://admin:4156@localhost:5432/mydb"
-engine = create_engine(DATABASE_URL)
+# DATABASE_URL = "postgresql://admin:4156@localhost:5432/mydb"
+# engine = create_engine(DATABASE_URL)
 
-def test_connection():
-    try:
-        with engine.connect() as connection:
-            # Проверяем соединение
-            result = connection.execute(text("SELECT version();"))
-            for row in result:
-                print("Успешное подключение к PostgreSQL в Docker!")
-                print(f"Версия базы: {row[0]}")
-    except Exception as e:
-        print(f"Ошибка подключения: {e}")
+# def test_connection():
+#     try:
+#         with engine.connect() as connection:
+#             # Проверяем соединение
+#             result = connection.execute(text("SELECT version();"))
+#             for row in result:
+#                 print("Успешное подключение к PostgreSQL в Docker!")
+#                 print(f"Версия базы: {row[0]}")
+#     except Exception as e:
+#         print(f"Ошибка подключения: {e}")
 
 def get_soup(url = ''):
     response = requests.get(url, HEADERS)
@@ -35,7 +35,7 @@ def get_soup(url = ''):
     soup = bs(response.text, 'html.parser')
     return soup
 
-test_connection()
+# test_connection()
 
 index_soup = get_soup(URL)
 side_cat = index_soup.find("div", class_="side_categories") # Поиск категорий
@@ -57,8 +57,8 @@ if side_cat:
 
                 for book in books: # Проход по книгам категории
                     if book:
-                        book_href = book.get("href,"").strip()
-                        book_url = urljoin(book_href)
+                        book_href = book.div.a["href"]
+                        book_url = urljoin(current_url, book_href)
                         book_soup = get_soup(book_url)
                         book_page = book_soup.find("article", class_="product_page")
                         if book_page:
@@ -67,16 +67,27 @@ if side_cat:
                             book_cost = book_soup.find("p", class_="price_color").text
                             star_tag = book.select_one('p[class^="star-rating"]')
                             book_rating = star_tag["class"][-1] if star_tag else "None"
-                            book_amount = book_soup.find("p", class_="instock_availability").text
+                            book_amount = book_soup.find("p", class_="instock availability").i.text
+                            book_details = book_soup.find("table", class_="table table-striped")
+                            book_reviews = book_details.tr.th["text"=='Number of reviews']
+                            th_tag = book_details.find("th", string="Number of reviews")
+                            th_tag = book_details.find("th", string="Number of reviews")
+                            if th_tag and th_tag.find_next_sibling("td"):
+                                book_reviews = th_tag.find_next_sibling("td").get_text(strip=True)
+                            else:
+                                book_reviews = "0"
+                            if th_tag and th_tag.find_next_sibling("td"):
+                                book_UPC = th_tag.find_next_sibling("td").get_text(strip=True)
+                            else:
+                                book_reviews = "0"
+                            book_UPC = book_details.tr.th["text"=='UPC']
+                            print(f"Name: {book_title}, \nUPC: {book_UPC}, \nDescription: {book_description}, \nCategory: {cat_title}, \nCost: {book_cost}, \nRating: {book_rating}, \nAmount: {book_amount}, \nReviews: {book_reviews} \n")
                             # Колво отзывов
                             # UID (UPC)
                             # Ссылка на товар
 
 
-                        book_title = book.h3.a["title"]
-                        price = book.find("p", class_="price_color").text
-                        rating = book.p["class"][-1]
-                        print(f"Name: {book_title}, \nCategory: {cat_title}, \nCost: {price}, \nRating: {rating}, \n")
+                        
                     else:
                         print("Ошибка, книга не найдена")
 
